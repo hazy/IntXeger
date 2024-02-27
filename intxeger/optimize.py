@@ -1,6 +1,15 @@
 from random import randint
 
-from intxeger.core import Choice, Concatenate, Constant, Group, GroupRef, Node, Repeat
+from intxeger.core import (
+    Choice,
+    Concatenate,
+    Constant,
+    Group,
+    GroupRef,
+    Node,
+    Repeat,
+    CharacterClassChoice,
+)
 
 
 def optimize(node: Node, level=10):
@@ -38,6 +47,9 @@ def optimize(node: Node, level=10):
 def _optimize(node: Node):
     if isinstance(node, Group):
         node = Group(_optimize(node.node), node.ref_id)
+
+    if isinstance(node, CharacterClassChoice):
+        node = _optimize(node.node)
 
     elif isinstance(node, Choice):
         node = Choice([_optimize(c) for c in node.choices])

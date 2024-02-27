@@ -6,10 +6,10 @@ from intxeger.core import Node, Choice
 class CharacterClassChoice(Node):
     def __init__(self, node: Choice):
         self.node = node
-        self.length = sum(choice.length for choice in self.node.choices)
+        self.length = self.node.length
 
     def get(self, idx: int):
-        self.node.get(idx)
+        return self.node.get(idx)
 
     def __str__(self):
         return (
