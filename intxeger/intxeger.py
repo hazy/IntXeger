@@ -3,20 +3,32 @@
 import sre_parse
 import string
 
-from intxeger.core import Choice, Concatenate, Constant, Group, GroupRef, Node, Repeat, CharacterClassChoice
+from intxeger.core import (
+    Choice,
+    Concatenate,
+    Constant,
+    Group,
+    GroupRef,
+    Node,
+    Repeat,
+    CharacterClassChoice,
+)
 from intxeger.optimize import optimize
 
 
 ILLEGAL_WHITE_SPACE_CHARACTERS = ["\n", "\r", "\t", "\v", "\f"]
 
+ALL_CHARACTERS = [
+    c for c in string.printable if c not in ILLEGAL_WHITE_SPACE_CHARACTERS
+]
 
 CATEGORY_MAP = {
-    sre_parse.CATEGORY_SPACE: " \t\n\r\x0b\x0c",
+    sre_parse.CATEGORY_SPACE: " ",
     sre_parse.CATEGORY_NOT_SPACE: "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~",
     sre_parse.CATEGORY_DIGIT: "0123456789",
-    sre_parse.CATEGORY_NOT_DIGIT: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ \t\n\r\x0b\x0c",
+    sre_parse.CATEGORY_NOT_DIGIT: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ ",
     sre_parse.CATEGORY_WORD: "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_",
-    sre_parse.CATEGORY_NOT_WORD: "!\"#$%&'()*+,-./:;<=>?@[\\]^`{|}~ \t\n\r\x0b\x0c",
+    sre_parse.CATEGORY_NOT_WORD: "!\"#$%&'()*+,-./:;<=>?@[\\]^`{|}~ ",
 }
 
 
@@ -27,7 +39,7 @@ def _to_node(op, args, max_repeat):
             nodes.append(_to_node(op, args, max_repeat))
         if nodes[0] == "NEGATE":
             values = [c[i] for c in nodes[1:] for i in range(c.length)]
-            nodes = [Constant(c) for c in string.printable if c not in values]
+            nodes = [Constant(c) for c in ALL_CHARACTERS if c not in values]
         node = Choice(nodes)
         return CharacterClassChoice(node=node)
     elif op == sre_parse.RANGE:
@@ -42,7 +54,7 @@ def _to_node(op, args, max_repeat):
     elif op == sre_parse.CATEGORY:
         return Choice([Constant(c) for c in CATEGORY_MAP[args]])
     elif op == sre_parse.ANY:
-        return Choice([Constant(c) for c in string.printable if c not in ILLEGAL_WHITE_SPACE_CHARACTERS])
+        return Choice([Constant(c) for c in ALL_CHARACTERS])
     elif op == sre_parse.ASSERT:
         nodes = []
         for op, args in args[1]:
@@ -71,7 +83,8 @@ def _to_node(op, args, max_repeat):
             max_ = max_repeat
         return Repeat(_to_node(op, args, max_repeat), min_, max_)
     elif op == sre_parse.NOT_LITERAL:
-        return Choice([Constant(c) for c in string.printable if c != chr(args)])
+        node = Choice([Constant(c) for c in ALL_CHARACTERS if c != chr(args)])
+        return CharacterClassChoice(node=node)
     else:
         raise ValueError(f"{op} {args}")
 
